@@ -4,6 +4,7 @@ import com.marcio.parking.exception.ParkingNotFoundException;
 import com.marcio.parking.model.Parking;
 import com.marcio.parking.repository.ParkingRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +20,7 @@ public class ParkingService {
         this.parkingRepository = parkingRepository;
     }
 
-
+    @Transactional(readOnly = true)
     public List<Parking> findAll() {
         return parkingRepository.findAll();
     }
@@ -28,11 +29,12 @@ public class ParkingService {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
+    @Transactional(readOnly = true)
     public Parking findById(String id) {
-        return parkingRepository.findById(id).orElseThrow(()->
+        return parkingRepository.findById(id).orElseThrow(() ->
                 new ParkingNotFoundException(id));
     }
-
+    @Transactional
     public Parking create(Parking parkingCreate) {
         String uuid = getUUID();
         parkingCreate.setId(uuid);
@@ -40,12 +42,12 @@ public class ParkingService {
         parkingRepository.save(parkingCreate);
         return parkingCreate;
     }
-
+    @Transactional
     public void deleteById(String id) {
         findById(id);
         parkingRepository.deleteById(id);
     }
-
+    @Transactional
     public Parking update(String id, Parking parkingCreate) {
         Parking parking = findById(id);
         parking.setColor(parkingCreate.getColor());
@@ -55,10 +57,12 @@ public class ParkingService {
         parkingRepository.save(parking);
         return parking;
     }
-
-    public Parking exit(String id) {
-
-
-        return null;
+    @Transactional
+    public Parking checkout(String id) {
+        Parking parking = findById(id);
+        parking.setEntryDate(LocalDateTime.now());
+        parking.setBill(ParkingCheckout.getBill(parking));
+        parkingRepository.save(parking);
+        return parking;
     }
 }
